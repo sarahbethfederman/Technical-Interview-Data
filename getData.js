@@ -2,6 +2,7 @@
 var Twitter = require('twitter-node-client').Twitter;
 var fs = require('fs');
 var https = require('https');
+var async = require('async'); // TO DO: fix async errors?
 
 // Authetication keys
 var genderAPIKey = "VhESjjsBTaEmQfRGdF";
@@ -26,65 +27,70 @@ function onSuccess(data) {
 function getGenders(data) {
   var name;
 
-  for (var i = 0; i < data.length; i++) {
-    // use a closure to avoid async errors
-    (function(i) {
-      name = data[i].user.name;
+  async.mapSeries(data, function(record, callback) {
+    getSplitGender(record.user.name, callback, record);
+  }, function(err, result) {
+      if(!err) {
+        console.log('Finished: ' + result);
 
-      // get their gender & save it
-      getSplitGender(name, function (gender) {
-        data[i].user.gender = gender;       
-      });
-    })(i);
-  }
-
-  // wait 5 secs
-  setTimeout(function() {
-    // then write to file
-    fs.writeFile("data.json", JSON.stringify(data), function(err) {
-      if (err) {
-        throw err;
+        fs.writeFile("data.json", JSON.stringify(result), function(err) {
+          if (err) { 
+            throw err; 
+          }
+        });
+      } else {
+        console.log('Error: ' + err);
       }
-    });
-  }, 5000);
+  });
 }
 
-function getSplitGender(name, callback) {
-  // console.log(name);
+function getSplitGender(name, callback, record) {
   var response = "";
-  // use the split api
   var url = "https://gender-api.com/get?split=" + encodeURIComponent(name) + "&key=" + genderAPIKey;
 
+  // send the request to split API
   https.get(url, function(res) {
     res.on('data', function(chunk) {
       response += chunk;
     });
+    res.on('error', function(err) {
+      console.log("error: " + err.message);
+    })
+    // when it finishes
     res.on('end', function() {
-      response = JSON.parse(response);;
-      // if they only gave a first name or other error
+      response = JSON.parse(response);
+
+      // if there was only a first name or other error
       if (response.errmsg) {
-        console.log(response.errno, name);
         // try the other API
-        getGender(name, callback);
+        getGender(name, callback, record);
       } else {
-        callback(response);
+        // save it to record
+        record.user.gender = response;
+
+        // and continue
+        callback(null, record);
       }
     });
   });
 }
 
-function getGender(name, callback) {
-  // console.log("alt: " + name);
+function getGender(name, callback, record) {
   var response = "";
+  var url = "https://gender-api.com/get?name=" + encodeURIComponent(name) + "&key=" + genderAPIKey;
   // use the first name API
-  https.get("https://gender-api.com/get?name=" + encodeURIComponent(name) + "&key=" + genderAPIKey, function(res) {
+  https.get(url, function(res) {
     res.on('data', function(chunk) {
       response += chunk;
     });
     res.on('end', function() {
       response = JSON.parse(response);
-      console.log(response);
-      callback(response);
+
+      // save it to record
+      record.user.gender = response;
+
+      // continue
+      callback(null, record);
     });
   });
 }
