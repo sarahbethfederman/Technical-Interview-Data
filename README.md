@@ -1,5 +1,6 @@
 # Twitter Data Visualization Data
-grab data w/ Twitter API
+grab data for Interactive IV data visualization w/ Twitter API
+I need to keep this public for the class, so please don't steal my API keys they won't help you :)
 
 # Install
 `npm install`
