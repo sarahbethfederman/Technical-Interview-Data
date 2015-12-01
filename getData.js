@@ -2,14 +2,15 @@
 var Twitter = require('twitter-node-client').Twitter;
 var fs = require('fs');
 var https = require('https');
-var async = require('async'); // TO DO: fix async errors?
+var async = require('async'); 
+var keys = require('./config');
 
 // Authetication keys
-var genderAPIKey = "VhESjjsBTaEmQfRGdF";
-var twitterConsumerKey = "wCmUmqbSjVGycHsBWNzLpY2hR";
-var twitterConsumerSecret = "s4f69spm7IIHjXJmr5GsrebfPIHm1tajPbC9JeSKwBBwPpjwcJ";
-var twitterAccessToken = "42741944-izY3RWhQVV5GOHrxSgqhTFkD3ucd0Bxd2QJV0qNAd";
-var twitterAccessTokenSecret= "N7E36Us5hxFbi8LR5RxWU8UzOZrl9VxMeCQ2txkurt4g5";
+var genderAPIKey = keys.genderAPIKey;
+var twitterConsumerKey = keys.twitterConsumerSecret;
+var twitterConsumerSecret = keys.twitterConsumerSecret;
+var twitterAccessToken = keys.twitterAccessToken;
+var twitterAccessTokenSecret= keys.twitterAccessTokenSecret;
 
 // Callback functions
 function onError(err, response, body) {
@@ -25,21 +26,18 @@ function onSuccess(data) {
 }
 
 function getGenders(data) {
-  var name;
-
   async.mapSeries(data, function(record, callback) {
     getSplitGender(record.user.name, callback, record);
   }, function(err, result) {
-      if(!err) {
+      if (err) {
+        console.log('Error: ' + err);
+      }
+      else {
         console.log('Finished: ' + result);
 
         fs.writeFile("data.json", JSON.stringify(result), function(err) {
-          if (err) { 
-            throw err; 
-          }
+          if (err) throw err;
         });
-      } else {
-        console.log('Error: ' + err);
       }
   });
 }
@@ -97,11 +95,11 @@ function getGender(name, callback, record) {
 
 // Make the twitter API call
 var config = {
-  "consumerKey": "wCmUmqbSjVGycHsBWNzLpY2hR",
-  "consumerSecret": "s4f69spm7IIHjXJmr5GsrebfPIHm1tajPbC9JeSKwBBwPpjwcJ",
-  "accessToken": "42741944-izY3RWhQVV5GOHrxSgqhTFkD3ucd0Bxd2QJV0qNAd",
-  "accessTokenSecret": "N7E36Us5hxFbi8LR5RxWU8UzOZrl9VxMeCQ2txkurt4g5",
-  "callBackUrl": "http://google.com"
+  "consumerKey": twitterConsumerKey,
+  "consumerSecret": twitterConsumerSecret,
+  "accessToken": twitterAccessToken,
+  "accessTokenSecret": twitterAccessTokenSecret,
+  "callBackUrl": "http://google.com"  // irrelevant url
 }
 
 var twitter = new Twitter(config);
